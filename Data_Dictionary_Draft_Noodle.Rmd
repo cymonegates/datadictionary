@@ -1,0 +1,95 @@
+---
+title: "CEND100 Data Dictionary"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    toc: true
+    toc_depth: 1
+---
+<!---
+Always remember to change the working directory and location of the spreadsheet when using on a different computer.
+--->
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+WORKING_DIRECTORY="C:/Users/cymone/Desktop/EHR"
+setwd(WORKING_DIRECTORY)
+library(DT)
+library(htmltools)
+library(pander)
+library(prettydoc)
+library(googlesheets)
+
+for_gs <- gs_title("TEST_DataDictionary_RStudio")
+for_gs_sheet <- gs_read(for_gs)
+
+
+columns=c("Table","Table.Contents","Records","Suggested.Alternate.Table.Name","Attribute.from.EHR.database","Confirmed","Attribute.from.data.dictionary","PDF.Location","Definition","Type","Acceptable.Values")
+colnames(for_gs_sheet)<-columns
+for_gs_sheet=subset(for_gs_sheet,Attribute.from.EHR.database!="")
+binned_data=for_gs_sheet
+#binned_data keeps the factors as that data type instead of converting them to a vector of characters
+
+for_gs_sheet[]<-lapply(for_gs_sheet,gsub,pattern="Â",replacement="")
+postestdata=subset(for_gs_sheet,Acceptable.Values!="NA")
+
+```
+
+#*Introduction*
+
+This section of the data documentation describes the master list of tables and fields included in the CEND100 database. This information is intended to provide guidence to all users accessing these patient level data.
+
+All fields in the database are outlined here in this data dictionary are organized in three different formats:
+  1. Alphabetically
+  2. Grouped by Table
+  3. Grouped by Field Characteristics (e.g. data type, required status, etc.)
+
+
+<!---This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+--->
+#Fields by Table of Origin
+```{r by.origin.table, echo=FALSE,results="asis",warning=FALSE}
+binned_data=droplevels(binned_data)
+tables.of.origin=unique(binned_data$Table)
+contents=unique(binned_data$Table.Contents)
+
+for(i in 1:length(tables.of.origin)){
+  t=tables.of.origin[i]
+  des=contents[i]
+  cat("\n\n\n\n\n\n")
+  tableHeader(paste("Table Name:", t))
+  #pandoc.header(paste("Table Name:",t),level=3)
+  cat("\n\n")
+  cat("Description:",des)
+  cat("\n\n")
+  
+  #displaying the variables stored in each table of origin
+  #Added the types of each variable as another column to each table
+  from.this.table=subset(binned_data,Table==t)
+  #unbin the data:
+  from.this.table[]=lapply(from.this.table,as.character)
+  
+  #prepping the table
+  vars=from.this.table$Attribute.from.EHR.database
+  data.types=from.this.table$Type
+  num.records=from.this.table$Records
+  include=data.frame(vars,data.types,num.records)
+  include$num.records=as.character(include$num.records)
+  
+#code to make dynamic table
+#I can't get this to work in the loop but if i change [i] to the table number it works individually
+datatable(include, colnames=c("Field","Type","Number of Records"),options = list(pageLength = 5, lengthMenu = c(5, 10, 15, 30, 45, 60, 75, 90)))
+  
+
+  
+}
+```
+
